@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
+using UnityEngine.EventSystems;
+using UnityEngine.UIElements;
+using Button = UnityEngine.UI.Button;
 
 public class RadialMenu : MonoBehaviour
 {
@@ -40,12 +42,14 @@ public class RadialMenu : MonoBehaviour
 			return;
 		}
 
-		button.onClick.AddListener(() =>
-		{
-			CurrentRing.SetActive(false);
-			pageAction();
-			UpdateMenu();
-		});
+		button.onClick.AddListener(() => ChangePage(pageAction));
+	}
+
+	private void ChangePage(Func<int> pageAction)
+	{
+		CurrentRing.SetActive(false);
+		pageAction();
+		UpdateMenu();
 	}
 
 	public void UpdateMenu()
@@ -86,6 +90,10 @@ public class RadialMenu : MonoBehaviour
 
 	void Update()
 	{
+		if (Input.mouseScrollDelta.y > 0)
+			ChangePage(pages.MoveNext);
+		if (Input.mouseScrollDelta.y < 0)
+			ChangePage(pages.MovePrevious);
 		if (!CommonInput.GetMouseButtonUp(1)) return;
 		CurrentRing.SelectedAction?.Invoke();
 		Destroy(gameObject);
