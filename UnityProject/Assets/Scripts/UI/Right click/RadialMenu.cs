@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UIElements;
+using Unitystation.Options;
 using Button = UnityEngine.UI.Button;
 
 public class RadialMenu : MonoBehaviour
@@ -15,9 +16,12 @@ public class RadialMenu : MonoBehaviour
 	private List<RadialMenuRing> rings;
 	private float buttonSize;
 	private float sizeScalar;
+	private CameraZoomHandler zoomHandler;
 
 	public void SetupMenu(List<RightClickMenuItem> menuItems)
 	{
+		zoomHandler = UIManager.Instance.GetComponent<CameraZoomHandler>();
+		zoomHandler.ToggleScrollWheelZoom(false);
 		SetupButtonSize();
 		pages = new PaginatedData<RightClickMenuItem>(menuItems, 12);
 		rings = new List<RadialMenuRing>(pages.PageCount);
@@ -90,12 +94,13 @@ public class RadialMenu : MonoBehaviour
 
 	void Update()
 	{
-		if (Input.mouseScrollDelta.y > 0)
-			ChangePage(pages.MoveNext);
 		if (Input.mouseScrollDelta.y < 0)
+			ChangePage(pages.MoveNext);
+		if (Input.mouseScrollDelta.y > 0)
 			ChangePage(pages.MovePrevious);
 		if (!CommonInput.GetMouseButtonUp(1)) return;
 		CurrentRing.SelectedAction?.Invoke();
+		zoomHandler.ToggleScrollWheelZoom(true);
 		Destroy(gameObject);
 	}
 }
