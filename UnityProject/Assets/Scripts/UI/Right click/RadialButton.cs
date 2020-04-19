@@ -1,25 +1,26 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
-using System.Reflection;
 
 public class RadialButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
-	[SerializeField] private Image circle = null;
-	[SerializeField] private Image icon = null;
+	private static readonly Color SelectedColor = Color.white / 3f;
+
+	[SerializeField] private Image circle;
+	[SerializeField] private Image icon;
 	private List<Color> palette;
-	[SerializeField] private Text title = null;
-	private RadialMenu menuControl;
+	[SerializeField] private Text title;
 	private Color defaultColour;
 	[HideInInspector]
 	public Action action;
-	private RightClickMenuItem menuItem;
 	private bool isSelected;
-	private bool isTopLevel;
-	public List<RadialButton> childButtons = new List<RadialButton>();
+	public int size;
+
+	private Action<RadialButton> setSelected;
+
+	private Color Color => isSelected ? defaultColour : defaultColour + SelectedColor;
 
 	private void Awake()
 	{
@@ -27,16 +28,14 @@ public class RadialButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHan
 		icon.material = Instantiate(icon.material);
 	}
 
-	public void SetButton(Vector2 localPos, RadialMenu menuController, RightClickMenuItem menuItem, bool topLevel)
+	public void SetButton(RightClickMenuItem menuItem, Action<RadialButton> toggleSelected, bool showLabel = false)
 	{
-		this.menuItem = menuItem;
-		transform.localPosition = localPos;
-		menuControl = menuController;
-		isTopLevel = topLevel;
-		circle.color = menuItem.BackgroundColor;
+		setSelected = toggleSelected;
 		defaultColour = menuItem.BackgroundColor;
+		circle.color = Color;
 		action = menuItem.Action;
 
+		size = (int)Mathf.Ceil(circle.preferredWidth);
 		icon.sprite = menuItem.IconSprite;
 		palette = menuItem.palette;
 		if (palette != null)
@@ -54,7 +53,7 @@ public class RadialButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHan
 			circle.sprite = menuItem.BackgroundSprite;
 		}
 
-		if (!topLevel)
+		if (showLabel)
 		{
 			title.text = menuItem.Label;
 		}
@@ -62,51 +61,14 @@ public class RadialButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHan
 
 	public void OnPointerEnter(PointerEventData eventData)
 	{
-		//if (eventData.pointerEnter != gameObject) return;
-
-		if (isTopLevel)
-		{
-			menuControl.SelectTopLevelButton(this);
-		}
-		else
-		{
-			isSelected = true;
-			circle.color = defaultColour + (Color.white / 3f);
-			menuControl.Selected = this;
-		}
+		setSelected?.Invoke(this);
+		isSelected = true;
+		circle.color = Color;
 	}
 
 	public void OnPointerExit(PointerEventData eventData)
 	{
-		//if (eventData.pointerEnter != gameObject) return;
-
-		if (!isTopLevel)
-		{
-			isSelected = false;
-			circle.color = defaultColour;
-			menuControl.Selected = null;
-		}
-	}
-
-	public void TopLevelSelectToggle(bool isSelected)
-	{
-		this.isSelected = isSelected;
-		if (isSelected)
-		{
-			circle.color = defaultColour + (Color.white / 3f);
-			menuControl.SetButtonAsLastSibling(this);
-			foreach (var btn in childButtons)
-			{
-				btn.gameObject.SetActive(true);
-			}
-		}
-		else
-		{
-			circle.color = defaultColour;
-			foreach (var btn in childButtons)
-			{
-				btn.gameObject.SetActive(false);
-			}
-		}
+		isSelected = false;
+		circle.color = Color;
 	}
 }

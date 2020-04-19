@@ -15,11 +15,9 @@ public class RadialMenuSpawner : MonoBehaviour {
 		}
 	}
 	public void SpawnRadialMenu(List<RightClickMenuItem> ListRightclick){
-		RadialMenu newMenu = Instantiate (menuPrefab) as RadialMenu;
-		newMenu.transform.SetParent (transform, false);
+		RadialMenu newMenu = Instantiate(menuPrefab, transform, false);
 		newMenu.transform.position = CommonInput.mousePosition;
 		newMenu.SetupMenu(ListRightclick);
 	}
 
 }
-

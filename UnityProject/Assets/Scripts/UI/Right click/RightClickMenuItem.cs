@@ -14,6 +14,7 @@ public class RightClickMenuItem
 	public readonly Sprite BackgroundSprite;
 	public readonly string Label;
 	public readonly List<Color> palette;
+	public readonly double size;
 
 	public readonly List<RightClickMenuItem> SubMenus;
 	public readonly Action Action;
@@ -27,6 +28,7 @@ public class RightClickMenuItem
 		this.Action = action;
 		this.SubMenus = subMenus;
 		this.BackgroundSprite = backgroundSprite;
+		this.size = iconSprite.rect.width;
 		this.palette = palette;
 	}
 

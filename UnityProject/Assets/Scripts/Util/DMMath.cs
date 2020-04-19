@@ -5,6 +5,8 @@ using Random = System.Random;
 
 public static class DMMath
 {
+	public const float TAU = Mathf.PI * 2;
+
 	public static double Round(double n, double x)
 	{
 		return Math.Round(n / x) * x;

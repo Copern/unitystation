@@ -49,7 +49,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 450f2959939bc7b409f466e3c79375b8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  menuPrefab: {fileID: 114717335588206916, guid: 5b514e1e0e5ff994c92091a33ecb7ec0,
+  menuPrefab: {fileID: 1179368616915219646, guid: 5b514e1e0e5ff994c92091a33ecb7ec0,
     type: 3}
 --- !u!114 &9057951774136607918
 MonoBehaviour:

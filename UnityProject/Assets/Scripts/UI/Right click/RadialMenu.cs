@@ -1,140 +1,93 @@
-﻿using System.Collections;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
-public class RadialMenu : MonoBehaviour, IPointerEnterHandler
+public class RadialMenu : MonoBehaviour
 {
-	private List<RadialButton> topLevelButtons = new List<RadialButton>();
+	public RadialButton buttonPrefab;
+	public Button pageLeft;
+	public Button pageRight;
 
-	public Dictionary<int, int> density = new Dictionary<int, int>()
+	private PaginatedData<RightClickMenuItem> pages;
+	private List<RadialMenuRing> rings;
+	private float buttonSize;
+	private float sizeScalar;
+
+	public void SetupMenu(List<RightClickMenuItem> menuItems)
 	{
-		{100, 6},
-		{200, 15},
-		{300, 32},
-		{400, 64},
-		{500, 128}
-	};
-
-	public RadialButton ButtonPrefab;
-
-	public RadialButton Selected;
-
-	public void SetupMenu(List<RightClickMenuItem> ListRightclick)
-	{
-		SpawnButtons(ListRightclick, 100, 0);
+		SetupButtonSize();
+		pages = new PaginatedData<RightClickMenuItem>(menuItems, 12);
+		rings = new List<RadialMenuRing>(pages.PageCount);
+		UpdateMenu();
+		SetupPageButton(pageLeft, pages.MovePrevious);
+		SetupPageButton(pageRight, pages.MoveNext);
 	}
 
-	public void SpawnButtons(List<RightClickMenuItem> menus, int menudepth, int startingAngle, int topLevelParent = -1)
+	private void SetupButtonSize()
 	{
-		int range = 360; //is the range that the buttons will be on in degrees
-		int minimumAngle = 0; //The initial offset Of the buttons in degrees
-		int maximumAngle = 360; //Linked to range
+		var lossyScale = transform.lossyScale;
+		sizeScalar = Mathf.Max(lossyScale.x, lossyScale.y);
+		var rect = buttonPrefab.GetComponent<RectTransform>().rect;
+		buttonSize = Math.Max(rect.width, rect.height);
+	}
 
-		if (menudepth > 100)
+	private void SetupPageButton(Button button, Func<int> pageAction)
+	{
+		if (button == null || pageAction == null)
 		{
-			range = menus.Count * (360 / density[menudepth]); //Try and keep the icons nicely spaced on the outer rings
-			minimumAngle = (int) (startingAngle - ((range / 2) - (0.5f * (360 / density[menudepth]))));
-			maximumAngle = startingAngle + range;
+			Logger.LogWarningFormat("Unable to add an action to {0} page button.", Category.UI, gameObject.name);
+			return;
 		}
 
-		for (var i = 0; i < menus.Count; i++)
+		button.onClick.AddListener(() =>
 		{
-			RadialButton newButton = Instantiate(ButtonPrefab) as RadialButton;
-			newButton.transform.SetParent(transform, false);
-			//Magic maths
-			float theta = (float) (((range * Mathf.Deg2Rad) / menus.Count) * i);
-			theta = (theta + (minimumAngle * Mathf.Deg2Rad));
-			float xpos = Mathf.Sin(theta);
-			float ypos = Mathf.Cos(theta);
+			CurrentRing.SetActive(false);
+			pageAction();
+			UpdateMenu();
+		});
+	}
 
-			if (menudepth == 100)
-			{
-				topLevelButtons.Add(newButton);
-				newButton.SetButton(new Vector2(xpos, ypos) * menudepth, this, menus[i], true);
-			}
-			else if(menudepth == 200)
-			{
-				newButton.SetButton(new Vector2(xpos, ypos) * menudepth, this, menus[i], false);
-				topLevelButtons[topLevelParent].childButtons.Add(newButton);
-			}
-			else
-			{
-				//TODO: What to do with higher depths ?!?! probably just keep it at 2 layers for time being
-			}
+	public void UpdateMenu()
+	{
+		CurrentRing.SetActive(true);
 
-			if (menus[i].SubMenus != null)
-			{
-				if (menus[i].SubMenus.Count != 0)
-				{
-					Vector2 targetDir = newButton.transform.position - transform.position;
-					var angle = Vector2.Angle(targetDir, transform.up);
-					if (targetDir.x < 0) angle *= -1;
+		pageLeft.SetActive(!pages.IsFirstPage);
+		pageRight.SetActive(!pages.IsLastPage);
+	}
 
-					SpawnButtons(menus[i].SubMenus, menudepth + 100, (int) angle, i);
-				}
+	/// <summary>
+	/// Returns the ring for the current page or creates a new ring for the page if it doesn't exist.
+	/// </summary>
+	public RadialMenuRing CurrentRing
+	{
+		get
+		{
+			var index = pages.Index;
+			if (index < rings.Count && rings[index] != null)
+			{
+				return rings[index];
 			}
 
-			foreach (var btn in newButton.childButtons)
+			var ringItems = pages.GetPage();
+			var options = new RadialMenuRingOptions
 			{
-				btn.gameObject.SetActive(false);
-			}
+				StartActive = true,
+				Size = buttonSize,
+				Scalar = sizeScalar,
+				// If there are multiple pages, make sure the offset is the same regardless of how many items there are.
+				Offset = pages.IsFirstPage ? 0 : rings[0].Offset - (buttonSize * sizeScalar)
+			};
+			rings.Add(new RadialMenuRing(buttonPrefab, options));
+			rings[index].Initialize(transform, ringItems);
+			return rings[index];
 		}
 	}
 
 	void Update()
 	{
-		if (CommonInput.GetMouseButtonUp(1))
-		{
-			if (Selected)
-			{
-				Selected.action?.Invoke();
-			}
-
-			Destroy(gameObject);
-		}
-	}
-
-	public void SetButtonAsLastSibling(RadialButton radialButton)
-	{
-		int index = topLevelButtons.IndexOf(radialButton);
-
-		for (int i = index; i >= 0; i--)
-		{
-			topLevelButtons[i].transform.SetAsFirstSibling();
-		}
-
-		for (int i = topLevelButtons.Count - 1; i > index; i--)
-		{
-			topLevelButtons[i].transform.SetAsFirstSibling();
-		}
-	}
-
-	public void OnPointerEnter(PointerEventData eventData)
-	{
-		if (eventData.pointerEnter != gameObject) return;
-
-		SelectTopLevelButton(null);
-	}
-
-	public void SelectTopLevelButton(RadialButton button)
-	{
-		var index = -1;
-		if (button != null)
-		{
-			index = topLevelButtons.IndexOf(button);
-		}
-
-		for (int i = 0; i < topLevelButtons.Count; i++)
-		{
-			if (i == index)
-			{
-				topLevelButtons[i].TopLevelSelectToggle(true);
-			}
-			else
-			{
-				topLevelButtons[i].TopLevelSelectToggle(false);
-			}
-		}
+		if (!CommonInput.GetMouseButtonUp(1)) return;
+		CurrentRing.SelectedAction?.Invoke();
+		Destroy(gameObject);
 	}
 }
