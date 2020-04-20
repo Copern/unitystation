@@ -55,6 +55,7 @@ MonoBehaviour:
     type: 3}
   pageLeft: {fileID: 190489337846954992}
   pageRight: {fileID: 7682954044775665926}
+  maxItemsPerPage: 12
 --- !u!222 &8624109636247753169
 CanvasRenderer:
   m_ObjectHideFlags: 0
