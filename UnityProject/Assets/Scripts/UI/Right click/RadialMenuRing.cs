@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using Object = UnityEngine.Object;
 
 public class RadialMenuRingOptions
@@ -38,8 +39,6 @@ public class RadialMenuRing
 	private RadialMenuItem selected;
 	public bool IsActive;
 	public float Offset;
-
-	public Action SelectedAction => selected.SelectedAction;
 
 	public RadialMenuRing(RadialButton buttonPrefab, RadialMenuRingOptions options)
 	{
@@ -137,7 +136,6 @@ public class RadialMenuRing
 			selected.ToggleSubMenu();
 
 		var item = menuItems.Find(menuItem => menuItem.Button == radialButton);
-		if (item == default) return;
 		item.ToggleSubMenu();
 		selected = item;
 	}

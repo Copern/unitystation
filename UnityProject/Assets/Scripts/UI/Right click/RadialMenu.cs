@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UIElements;
@@ -12,11 +13,11 @@ public class RadialMenu : MonoBehaviour
 	public Button pageLeft;
 	public Button pageRight;
 
+	private CameraZoomHandler zoomHandler;
 	private PaginatedData<RightClickMenuItem> pages;
 	private List<RadialMenuRing> rings;
 	private float buttonSize;
 	private float sizeScalar;
-	private CameraZoomHandler zoomHandler;
 
 	public void SetupMenu(List<RightClickMenuItem> menuItems)
 	{
@@ -94,13 +95,48 @@ public class RadialMenu : MonoBehaviour
 
 	void Update()
 	{
-		if (Input.mouseScrollDelta.y < 0)
-			ChangePage(pages.MoveNext);
-		if (Input.mouseScrollDelta.y > 0)
+		// Allow mouse wheel to scroll through pages.
+		if (Input.mouseScrollDelta.y > 0 && !pages.IsFirstPage)
 			ChangePage(pages.MovePrevious);
-		if (!CommonInput.GetMouseButtonUp(1)) return;
-		CurrentRing.SelectedAction?.Invoke();
-		zoomHandler.ToggleScrollWheelZoom(true);
+		if (Input.mouseScrollDelta.y < 0 && !pages.IsLastPage)
+			ChangePage(pages.MoveNext);
+
+		// Determine if any mouse button has been clicked.
+		var pointerId = -1;
+		for (var i = 0; i < 3; i++)
+		{
+			if (CommonInput.GetMouseButtonDown(i))
+				pointerId = i;
+		}
+
+		if (pointerId < 0) return;
+
+		// Raycast to see if we clicked anywhere that is not the radial menu's buttons
+
+		List<RaycastResult> raycastResults = new List<RaycastResult>();
+
+		var pointerData = new PointerEventData(EventSystem.current)
+		{
+			pointerId = (pointerId + 1) * -1,
+			position = CommonInput.mousePosition
+		};
+		EventSystem.current.RaycastAll(pointerData, raycastResults);
+		foreach (var result in raycastResults)
+		{
+			var go = result.gameObject;
+			while (go != null)
+			{
+				if (go == gameObject) return;
+
+				go = go.GetParent();
+			}
+		}
+
 		Destroy(gameObject);
+	}
+
+	private void OnDestroy()
+	{
+		zoomHandler.OrNull()?.ToggleScrollWheelZoom(true);
 	}
 }

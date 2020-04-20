@@ -13,12 +13,19 @@ public class RadialButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHan
 	private List<Color> palette;
 	[SerializeField] private Text title;
 	private Color defaultColour;
-	[HideInInspector]
-	public Action action;
 	private bool isSelected;
-	public int size;
 
 	private Action<RadialButton> setSelected;
+
+	private bool IsSelected
+	{
+		get => isSelected;
+		set
+		{
+			isSelected = value;
+			circle.color = Color;
+		}
+	}
 
 	private Color Color => isSelected ? defaultColour : defaultColour + SelectedColor;
 
@@ -28,14 +35,26 @@ public class RadialButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHan
 		icon.material = Instantiate(icon.material);
 	}
 
+	private void OnEnable()
+	{
+		IsSelected = false;
+	}
+
 	public void SetButton(RightClickMenuItem menuItem, Action<RadialButton> toggleSelected, bool showLabel = false)
 	{
+		if (menuItem.Action != null)
+		{
+			var button = gameObject.GetComponent<Button>();
+			button.onClick.AddListener(() =>
+			{
+				menuItem.Action();
+				Destroy(gameObject.GetParent());
+			});
+		}
+
 		setSelected = toggleSelected;
 		defaultColour = menuItem.BackgroundColor;
 		circle.color = Color;
-		action = menuItem.Action;
-
-		size = (int)Mathf.Ceil(circle.preferredWidth);
 		icon.sprite = menuItem.IconSprite;
 		palette = menuItem.palette;
 		if (palette != null)
@@ -62,13 +81,11 @@ public class RadialButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHan
 	public void OnPointerEnter(PointerEventData eventData)
 	{
 		setSelected?.Invoke(this);
-		isSelected = true;
-		circle.color = Color;
+		IsSelected = true;
 	}
 
 	public void OnPointerExit(PointerEventData eventData)
 	{
-		isSelected = false;
-		circle.color = Color;
+		IsSelected = false;
 	}
 }

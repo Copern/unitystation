@@ -25,6 +25,9 @@ public static class GameObjectExtensions
 	public static void SetActive<T>(this T obj, bool active) where T : Component =>
 		obj.OrNull()?.gameObject.SetActive(active);
 
+	public static GameObject GetParent(this GameObject obj) =>
+		obj.transform.parent.OrNull()?.gameObject;
+
 	/// <summary>
 	/// Creates garbage, use sparingly.
 	///

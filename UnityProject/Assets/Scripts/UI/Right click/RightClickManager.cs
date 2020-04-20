@@ -100,11 +100,18 @@ public class RightClickManager : MonoBehaviour
 			EventSystem.current.RaycastAll(pointerData, raycastResults);
 #pragma warning disable UEA0005 // Ignore warning about using GetComponent() inside Update()
 			// Searching for UI_ItemSwap instead of UI_ItemSlot for the larger and more consistent hitbox.
+			var hasRadialMenu = raycastResults.Any(rc =>
+			{
+				var go = rc.gameObject;
+				return go.GetComponentInParent<RadialMenu>();
+			});
+			if (hasRadialMenu)
+				return;
+
 			objects.AddRange(raycastResults.Select(rc => {
-				// Verbose workaround since you should not use null propagation on Unity objects. Thanks, Unity.
 				var itemSwap = rc.gameObject.GetComponent<UI_ItemSwap>();
-				var itemSlot = itemSwap == null ? null : itemSwap.GetComponentInChildren<UI_ItemSlot>();
-				return itemSlot == null ? null : itemSlot.ItemObject;
+				var itemSlot = itemSwap.OrNull()?.GetComponentInChildren<UI_ItemSlot>();
+				return itemSlot.OrNull()?.ItemObject;
 				}).Where(go => go != null));
 #pragma warning restore UEA0005
 

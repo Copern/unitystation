@@ -11,9 +11,6 @@ public struct RadialMenuItem : IEquatable<RadialMenuItem>
 		SubMenu = subMenu;
 	}
 
-	public Action SelectedAction =>
-		SubMenu == null ? Button.OrNull()?.action : SubMenu.SelectedAction;
-
 	public void SetActive(bool active)
 	{
 		Button.SetActive(active);
