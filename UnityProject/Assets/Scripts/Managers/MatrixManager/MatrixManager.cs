@@ -519,24 +519,6 @@ public partial class MatrixManager : MonoBehaviour
 				includeList);
 	}
 
-	///Cross-matrix edition of <see cref="Matrix.IsPassableAt(UnityEngine.Vector3Int,UnityEngine.Vector3Int,bool,GameObject)"/>
-	///<inheritdoc cref="Matrix.IsPassableAt(UnityEngine.Vector3Int,UnityEngine.Vector3Int,bool,GameObject)"/>
-	public static bool IsPassableAtAllMatricesLocal(Vector3Int localOrigin, Vector3Int localTarget, bool isServer,
-		CollisionType collisionType = CollisionType.Player, bool includingPlayers = true, GameObject context = null,
-		int[] excludeList = null, List<LayerType> excludeLayers = null, bool isReach = false, bool onlyExcludeLayerOnDestination = false)
-	{
-		// Gets the list of Matrixes to actually check
-		MatrixInfo[] includeList = excludeList != null
-			? ExcludeFromAllMatrixes(GetList(excludeList)).ToArray()
-			: Instance.ActiveMatrices.ToArray();
-
-		return AllMatchInternal(mat =>
-				mat.Matrix.IsPassableAtOneMatrix(localOrigin, localTarget, isServer,
-					collisionType: collisionType, includingPlayers: includingPlayers, context: context,
-					excludeLayers: excludeLayers, isReach: isReach, onlyExcludeLayerOnDestination: onlyExcludeLayerOnDestination),
-			includeList);
-	}
-
 	/// <summary>
 	/// Server only.
 	/// Finds all TilemapDamage at given world pos, so you could apply damage to given tiles via DoMeleeDamage etc.
