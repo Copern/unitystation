@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using Tilemaps.Behaviours.Layers;
 using UnityEngine;
 using UnityEngine.Events;
 using Debug = UnityEngine.Debug;
@@ -105,14 +106,19 @@ namespace TileManagement
 				}
 
 				var ToInsertDictionary = new Dictionary<Vector3Int, TileLocation>();
-				BoundsInt bounds = layer.Tilemap.cellBounds;
+				var bounds = layer.Tilemap.cellBounds;
+				var xMin = bounds.xMin;
+				var xMax = bounds.xMax;
+				var yMin = bounds.yMin;
+				var yMax = bounds.yMax;
 				TileLocation Tile = null;
-				for (int n = bounds.xMin; n < bounds.xMax; n++)
+				for (int n = xMin; n < xMax; n++)
 				{
-					for (int p = bounds.yMin; p < bounds.yMax; p++)
+					for (int p = yMin; p < yMax; p++)
 					{
+						var tileMap = layer.Tilemap;
 						Vector3Int localPlace = (new Vector3Int(n, p, 0));
-						var getTile = layer.Tilemap.GetTile(localPlace) as LayerTile;
+						var getTile = tileMap.GetTile(localPlace) as LayerTile;
 						if (getTile != null)
 						{
 							Tile = GetPooledTile();
@@ -120,8 +126,8 @@ namespace TileManagement
 							Tile.PresentMetaTileMap = this;
 							Tile.PresentlyOn = layer;
 							Tile.Tile = getTile;
-							Tile.Colour = layer.Tilemap.GetColor(localPlace);
-							Tile.TransformMatrix = layer.Tilemap.GetTransformMatrix(localPlace);
+							Tile.Colour = tileMap.GetColor(localPlace);
+							Tile.TransformMatrix = tileMap.GetTransformMatrix(localPlace);
 							ToInsertDictionary[localPlace] = Tile;
 						}
 					}
@@ -145,8 +151,9 @@ namespace TileManagement
 				layerOne.LayerType.GetOrder().CompareTo(layerTwo.LayerType.GetOrder()));
 			DamageableLayers = damageableLayersValues.ToArray();
 			PresentMatrix = this.GetComponent<Matrix>();
-			if (Application.isPlaying == false) return;
-			//UpdateManager.Add(CallbackType.UPDATE, ChangeCheck);
+			MatrixBounds.MetaMap = this;
+			MatrixBounds.MatrixMove = PresentMatrix.MatrixMove;
+			MatrixBounds.UpdateMatrixBounds();
 		}
 
 		public void OnDisable()
@@ -157,6 +164,8 @@ namespace TileManagement
 
 		public void Update()
 		{
+			MatrixBounds.UpdateWorldBounds();
+
 			lock (QueuedChanges)
 			{
 				if (QueuedChanges.Count == 0) return;
@@ -281,25 +290,26 @@ namespace TileManagement
 			}
 
 			TileLocation TileLcation = null;
-			for (var i = 0; i < SolidLayersValues.Length; i++)
+			var solidLayersValues = SolidLayersValues;
+			for (var i = 0; i < solidLayersValues.Length; i++)
 			{
+				var layerType = solidLayersValues[i].LayerType;
 				// Skip floor & base collisions if this is not a shuttle
 				if (collisionType != CollisionType.Shuttle &&
-				    (SolidLayersValues[i].LayerType == LayerType.Floors ||
-				     SolidLayersValues[i].LayerType == LayerType.Base))
+				    (layerType == LayerType.Floors || layerType == LayerType.Base))
 				{
 					continue;
 				}
 
 				// Skip if the current tested layer is being excluded.
-				if (excludeLayers != null && excludeLayers.Contains(SolidLayersValues[i].LayerType))
+				if (excludeLayers != null && excludeLayers.Contains(layerType))
 				{
 					continue;
 				}
 
 				lock (PresentTiles)
 				{
-					PresentTiles[SolidLayersValues[i]].TryGetValue(to, out TileLcation);
+					PresentTiles[solidLayersValues[i]].TryGetValue(to, out TileLcation);
 				}
 
 				if (TileLcation?.Tile == null) continue;
@@ -981,76 +991,16 @@ namespace TileManagement
 			}
 		}
 
+		public void UpdateMatrixBounds()
+		{
+			MatrixBounds.UpdateMatrixBounds();
+		}
+
+		public MatrixBounds MatrixBounds { get; } = new MatrixBounds();
+
 		public Vector3 LocalToWorld(Vector3 localPos) => LayersValues[0].LocalToWorld(localPos);
 		public Vector3 CellToWorld(Vector3Int cellPos) => LayersValues[0].CellToWorld(cellPos);
 		public Vector3 WorldToLocal(Vector3 worldPos) => LayersValues[0].WorldToLocal(worldPos);
-
-		public BoundsInt GetWorldBounds()
-		{
-			var bounds = GetBounds();
-			//???
-			var min = CellToWorld(bounds.min);
-			var max = CellToWorld(bounds.max);
-			if (PresentMatrix?.MatrixMove?.inProgressRotation != null)
-			{
-				Vector3Int TopRightMax = bounds.max;
-				Vector3Int BottomLeftMin = bounds.min;
-				Vector3Int BottomRight = new Vector3Int(TopRightMax.x, BottomLeftMin.y, 0);
-				Vector3Int TopLeft = new Vector3Int(BottomLeftMin.x, TopRightMax.y, 0);
-				var TopRightMaxI = CellToWorld(TopRightMax);
-				var BottomLeftMinI = CellToWorld(BottomLeftMin);
-				var BottomRightI = CellToWorld(BottomRight);
-				var TopLeftI = CellToWorld(TopLeft);
-				MaxMinCheck(ref min, ref max, TopRightMaxI);
-				MaxMinCheck(ref min, ref max, BottomLeftMinI);
-				MaxMinCheck(ref min, ref max, BottomRightI);
-				MaxMinCheck(ref min, ref max, TopLeftI);
-			}
-
-
-			return new BoundsInt(min.RoundToInt(), (max - min).RoundToInt());
-		}
-
-		public void MaxMinCheck(ref Vector3 min, ref Vector3 max, Vector3 ToCompare)
-		{
-			if (ToCompare.x > max.x)
-			{
-				max.x = ToCompare.x;
-			}
-			else if (min.x > ToCompare.x)
-			{
-				min.x = ToCompare.x;
-			}
-
-			if (ToCompare.y > max.y)
-			{
-				max.y = ToCompare.y;
-			}
-			else if (min.y > ToCompare.y)
-			{
-				min.y = ToCompare.y;
-			}
-		}
-
-		public BoundsInt GetBounds()
-		{
-			Vector3Int minPosition = Vector3Int.one * int.MaxValue;
-			Vector3Int maxPosition = Vector3Int.one * int.MinValue;
-
-			for (var i = 0; i < LayersValues.Length; i++)
-			{
-				BoundsInt layerBounds = LayersValues[i].Bounds;
-				if (layerBounds.x == 0 && layerBounds.y == 0)
-				{
-					continue; // Has no tiles
-				}
-
-				minPosition = Vector3Int.Min(layerBounds.min, minPosition);
-				maxPosition = Vector3Int.Max(layerBounds.max, maxPosition);
-			}
-
-			return new BoundsInt(minPosition, maxPosition - minPosition);
-		}
 
 		public Vector3Int WorldToCell(Vector3 worldPosition)
 		{
@@ -1189,7 +1139,7 @@ namespace TileManagement
 
 			bool LeftFaceHit = true;
 
-
+			var worldPos = Vector3.zero.ToWorld(PresentMatrix);
 
 			while (Math.Abs((xSteps + gridOffsetx + stepX) * vexinvX) < distance ||
 			       Math.Abs((ySteps + gridOffsety + stepY) * vexinvY) < distance)
@@ -1228,8 +1178,11 @@ namespace TileManagement
 				vecHit.y = origin.y + (float) RelativeY; // + offsetY;
 				//Check point here
 
+				Vector2 normal;
+
 				if (LeftFaceHit)
 				{
+					normal = Vector2.left * stepX;
 					// float TestX = ((vecHit.x - 0.5f) - Mathf.Floor(vecHit.x));
 
 					// if (0.05f < Math.Abs(TestX))
@@ -1246,6 +1199,7 @@ namespace TileManagement
 				}
 				else
 				{
+					normal = Vector2.down * stepY;
 					// float Testy = ((vecHit.y - 0.5f) - Mathf.Floor(vecHit.y));
 					// if (0.05f < Math.Abs(Testy))
 					// {
@@ -1258,14 +1212,19 @@ namespace TileManagement
 					// }
 				}
 
-				for (var i = 0; i < LayersValues.Length; i++)
+				var vecWorld = worldPos + vec;
+				var vecHitWorld = worldPos + vecHit;
+
+				var layers = LayersValues;
+				for (var i = 0; i < layers.Length; i++)
 				{
-					if (LayersValues[i].LayerType == LayerType.Objects) continue;
-					if (LTSUtil.IsLayerIn(layerMask, LayersValues[i].LayerType))
+					var layer = layers[i];
+					if (layer.LayerType == LayerType.Objects) continue;
+					if (LTSUtil.IsLayerIn(layerMask, layer.LayerType))
 					{
 						lock (PresentTiles)
 						{
-							PresentTiles[LayersValues[i]].TryGetValue(vec, out TileLcation);
+							PresentTiles[layer].TryGetValue(vec, out TileLcation);
 						}
 
 						// var wold = (vecHit.ToWorld(PresentMatrix));
@@ -1291,26 +1250,8 @@ namespace TileManagement
 						{
 							if(tileNamesToIgnore != null && tileNamesToIgnore.Any( c => c.name == TileLcation?.Tile.name)) continue;
 
-							Vector2 normal;
-
-							if (LeftFaceHit)
-							{
-								normal = Vector2.left * stepX;
-							}
-							else
-							{
-								normal = Vector2.down * stepY;
-							}
-
-
-							Vector3 AdjustedNormal = ((Vector3) normal).ToWorld(PresentMatrix);
-							AdjustedNormal = AdjustedNormal - (Vector3.zero.ToWorld(PresentMatrix));
-
-
-							// Debug.DrawLine(wold, wold + AdjustedNormal, Color.cyan, 30);
-
-							return new MatrixManager.CustomPhysicsHit(((Vector3) vec).ToWorld(PresentMatrix),
-								(vecHit).ToWorld(PresentMatrix), AdjustedNormal,
+							return new MatrixManager.CustomPhysicsHit(vecWorld,
+								vecHitWorld, normal,
 								new Vector2((float) RelativeX, (float) RelativeY).magnitude, TileLcation);
 						}
 					}

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Systems.Atmospherics;
 using UnityEngine;
 using Mirror;
+using Tilemaps.Behaviours.Layers;
 using Random = UnityEngine.Random;
 
 namespace Items.Command
@@ -15,7 +16,7 @@ namespace Items.Command
 		private Pickupable pick;
 		private CustomNetTransform customNetTrans;
 		private RegisterItem registerItem;
-		private BoundsInt bound;
+		private MatrixBounds bound;
 		private EscapeShuttle escapeShuttle;
 
 		private float timeCheckDiskLocation = 5.0f;
@@ -59,7 +60,7 @@ namespace Items.Command
 
 		private void EnsureInit(MatrixInfo matrixInfo)
 		{
-			bound = MatrixManager.MainStationMatrix.Bounds;
+			bound = MatrixManager.MainStationMatrix.MatrixBounds;
 			escapeShuttle = FindObjectOfType<EscapeShuttle>();
 			boundsConfigured = true;
 		}
@@ -99,7 +100,7 @@ namespace Items.Command
 			if (escapeShuttle != null && escapeShuttle.Status != EscapeShuttleStatus.DockedCentcom)
 			{
 				var matrixInfo = escapeShuttle.MatrixInfo;
-				if (matrixInfo == null || matrixInfo.Bounds.Contains(registerItem.WorldPositionServer))
+				if (matrixInfo == null || matrixInfo.MatrixBounds.Bounds.Contains(registerItem.WorldPositionServer))
 				{
 					return false;
 				}
@@ -136,10 +137,13 @@ namespace Items.Command
 
 		private void Teleport()
 		{
-			Vector3 position = new Vector3(Random.Range(bound.xMin, bound.xMax), Random.Range(bound.yMin, bound.yMax), 0);
+			var boundsMin = bound.Min;
+			var boundsMax = bound.Max;
+			
+			Vector3 position = new Vector3(Random.Range(boundsMin.x, boundsMax.x), Random.Range(boundsMin.y, boundsMax.y), 0);
 			while (MatrixManager.IsSpaceAt(Vector3Int.FloorToInt(position), true) || MatrixManager.IsWallAtAnyMatrix(Vector3Int.FloorToInt(position), true))
 			{
-				position = new Vector3(Random.Range(bound.xMin, bound.xMax), Random.Range(bound.yMin, bound.yMax), 0);
+				position = new Vector3(Random.Range(boundsMin.x, boundsMax.x), Random.Range(boundsMin.y, boundsMax.y), 0);
 			}
 
 			if (pick?.ItemSlot != null)

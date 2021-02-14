@@ -70,9 +70,12 @@ namespace InGameEvents
 
 			int asteroidAmount = UnityEngine.Random.Range(minMeteorAmount, maxMeteorAmount);
 
+			var stationBounds = stationMatrix.MatrixBounds;
+			var boundsMin = stationBounds.WorldMin;
+			var boundsMax = stationBounds.WorldMax;
 			for (var i = 1; i <= asteroidAmount; i++)
 			{
-				Vector3 position = new Vector3(UnityEngine.Random.Range(stationMatrix.WorldBounds.xMin, stationMatrix.WorldBounds.xMax), UnityEngine.Random.Range(stationMatrix.WorldBounds.yMin, stationMatrix.WorldBounds.yMax), 0);
+				Vector3 position = new Vector3(UnityEngine.Random.Range(boundsMin.x, boundsMax.x), UnityEngine.Random.Range(boundsMin.y, boundsMax.y), 0);
 				impactCoords.Enqueue(position);
 			}
 

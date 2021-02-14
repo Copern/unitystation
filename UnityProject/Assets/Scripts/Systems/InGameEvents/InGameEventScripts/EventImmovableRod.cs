@@ -56,9 +56,13 @@ namespace InGameEvents
 		{
 			if (IsMatrixInvalid()) return;
 
-			var MaxCoord = new Vector2() { x = stationMatrix.WorldBounds.xMax , y = stationMatrix.WorldBounds.yMax };
+			var stationBounds = stationMatrix.MatrixBounds;
+			var boundsMin = stationBounds.WorldMin;
+			var boundsMax = stationBounds.WorldMax;
 
-			var MinCoord = new Vector2() { x = stationMatrix.WorldBounds.xMin, y = stationMatrix.WorldBounds.yMin };
+			var MaxCoord = new Vector2() { x = boundsMax.x , y = boundsMax.y };
+
+			var MinCoord = new Vector2() { x = boundsMin.x, y = boundsMin.y };
 
 			var biggestDistancePosible = (int)Vector2.Distance(MaxCoord, MinCoord);
 

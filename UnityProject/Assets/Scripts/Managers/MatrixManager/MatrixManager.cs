@@ -14,6 +14,7 @@ using UnityEngine.SceneManagement;
 using Debug = UnityEngine.Debug;
 using Systems.Atmospherics;
 using Objects.Construction;
+using Tilemaps.Behaviours.Layers;
 
 /// <summary>
 /// Defines collision type we expect
@@ -114,30 +115,34 @@ public partial class MatrixManager : MonoBehaviour
 	public static void RegisterMatrix(Matrix matrixToRegister, bool isSpaceMatrix = false, bool isMainStation = false,
 		bool isLavaLand = false)
 	{
-		foreach (var curInfo in Instance.ActiveMatrices)
+		var instance = Instance;
+		var activeMatrices = instance.ActiveMatrices;
+		foreach (var curInfo in activeMatrices)
 		{
 			if (curInfo.Matrix == matrixToRegister) return;
 		}
 
-		var matrixInfo = CreateMatrixInfoFromMatrix(matrixToRegister, Instance.ActiveMatrices.Count);
+		var matrixInfo = CreateMatrixInfoFromMatrix(matrixToRegister, activeMatrices.Count);
 
-		if (Instance.ActiveMatrices.Contains(matrixInfo) == false)
+		if (activeMatrices.Contains(matrixInfo) == false)
 		{
-			Instance.ActiveMatrices.Add(matrixInfo);
+			activeMatrices.Add(matrixInfo);
 		}
 
-		if (Instance.MovableMatrices.Contains(matrixInfo) == false && matrixInfo.MatrixMove != null)
+		var movableMatrices = instance.MovableMatrices;
+
+		if (movableMatrices.Contains(matrixInfo) == false && matrixInfo.MatrixMove != null)
 		{
-			Instance.MovableMatrices.Add(matrixInfo);
+			movableMatrices.Add(matrixInfo);
 		}
 
 		matrixToRegister.Id = matrixInfo.Id;
 
 		if (isSpaceMatrix)
 		{
-			if (Instance.spaceMatrix == null)
+			if (instance.spaceMatrix == null)
 			{
-				Instance.spaceMatrix = matrixToRegister;
+				instance.spaceMatrix = matrixToRegister;
 			}
 			else
 			{
@@ -147,9 +152,9 @@ public partial class MatrixManager : MonoBehaviour
 
 		if (isMainStation)
 		{
-			if (Instance.mainStationMatrix == null)
+			if (instance.mainStationMatrix == null)
 			{
-				Instance.mainStationMatrix = matrixToRegister;
+				instance.mainStationMatrix = matrixToRegister;
 			}
 			else
 			{
@@ -159,9 +164,9 @@ public partial class MatrixManager : MonoBehaviour
 
 		if (isLavaLand)
 		{
-			if (Instance.lavaLandMatrix == null)
+			if (instance.lavaLandMatrix == null)
 			{
-				Instance.lavaLandMatrix = matrixToRegister;
+				instance.lavaLandMatrix = matrixToRegister;
 			}
 			else
 			{
@@ -170,7 +175,7 @@ public partial class MatrixManager : MonoBehaviour
 		}
 
 		matrixToRegister.ConfigureMatrixInfo(matrixInfo);
-		Instance.InitCollisions(matrixInfo);
+		instance.InitCollisions(matrixInfo);
 	}
 
 	private static MatrixInfo CreateMatrixInfoFromMatrix(Matrix matrix, int id)
@@ -245,11 +250,12 @@ public partial class MatrixManager : MonoBehaviour
 
 		if (layerMask != LayerTypeSelection.None)
 		{
-			for (var i = Instance.ActiveMatrices.Count - 1; i >= 0; i--)
+			var activeMatrices = Instance.ActiveMatrices;
+			for (var i = activeMatrices.Count - 1; i >= 0; i--)
 			{
-				MatrixInfo mat = Instance.ActiveMatrices[i];
+				MatrixInfo mat = activeMatrices[i];
 				//if (mat.Matrix == Instance.spaceMatrix) continue;
-				if (LineIntersectsRect(Worldorigin, (Vector2) WorldTo, mat.WorldBounds))
+				if (LineIntersectsRect(Worldorigin, (Vector2) WorldTo, mat.MatrixBounds))
 				{
 					Checkhit = mat.MetaTileMap.Raycast(Worldorigin.ToLocal(mat.Matrix), Vector2.zero, distance,
 						layerMask,
@@ -352,24 +358,32 @@ public partial class MatrixManager : MonoBehaviour
 		public TileLocation TileLocation;
 	}
 
-	public static bool LineIntersectsRect(Vector2 p1, Vector2 p2, BoundsInt r)
+	public static bool LineIntersectsRect(Vector2 p1, Vector2 p2, MatrixBounds r)
 	{
-		var xMin = r.xMin;
-		var yMin = r.yMin;
-		var xMax = r.xMax;
-		var yMax = r.yMax;
+		var worldMin = r.WorldMin;
+		var worldMax = r.WorldMax;
+		var xMin = worldMin.x;
+		var yMin = worldMin.y;
+		var xMax = worldMax.x;
+		var yMax = worldMax.y;
+		var min = new Vector2(xMin, yMin);
+		var max = new Vector2(xMax, yMax);
+		var minMax = new Vector2(xMin, yMax);
+		var maxMin = new Vector2(xMax, yMin);
 
-		return LineIntersectsLine(p1, p2, new Vector2(xMin, yMin), new Vector2(xMin, yMax)) ||
-		       LineIntersectsLine(p1, p2, new Vector2(xMin, yMin), new Vector2(xMax, yMin)) ||
-		       LineIntersectsLine(p1, p2, new Vector2(xMax, yMax), new Vector2(xMin, yMax)) ||
-		       LineIntersectsLine(p1, p2, new Vector2(xMax, yMax), new Vector2(xMax, yMin)) ||
-		       (FindPoint(r.min, r.max, p1) && FindPoint(r.min, r.max, p2));
+		return LineIntersectsLine(p1, p2, min, minMax) ||
+		       LineIntersectsLine(p1, p2, min, maxMin) ||
+		       LineIntersectsLine(p1, p2, max, minMax) ||
+		       LineIntersectsLine(p1, p2, max, maxMin) ||
+		       (FindPoint(worldMin, worldMax, p1) && FindPoint(worldMin, worldMax, p2));
 	}
 
 	static bool FindPoint(Vector3Int min, Vector3Int max, Vector2 Point)
 	{
-		if (Point.x > min.x && Point.x < max.x &&
-		    Point.y > min.y && Point.y < max.y)
+		var pointX = Point.x;
+		var pointY = Point.y;
+		if (pointX > min.x && pointX < max.x &&
+			pointY > min.y && pointY < max.y)
 			return true;
 
 		return false;
@@ -503,6 +517,24 @@ public partial class MatrixManager : MonoBehaviour
 				collisionType: collisionType, includingPlayers: includingPlayers, context: context,
 				excludeLayers: excludeLayers, isReach: isReach, onlyExcludeLayerOnDestination: onlyExcludeLayerOnDestination),
 				includeList);
+	}
+
+	///Cross-matrix edition of <see cref="Matrix.IsPassableAt(UnityEngine.Vector3Int,UnityEngine.Vector3Int,bool,GameObject)"/>
+	///<inheritdoc cref="Matrix.IsPassableAt(UnityEngine.Vector3Int,UnityEngine.Vector3Int,bool,GameObject)"/>
+	public static bool IsPassableAtAllMatricesLocal(Vector3Int localOrigin, Vector3Int localTarget, bool isServer,
+		CollisionType collisionType = CollisionType.Player, bool includingPlayers = true, GameObject context = null,
+		int[] excludeList = null, List<LayerType> excludeLayers = null, bool isReach = false, bool onlyExcludeLayerOnDestination = false)
+	{
+		// Gets the list of Matrixes to actually check
+		MatrixInfo[] includeList = excludeList != null
+			? ExcludeFromAllMatrixes(GetList(excludeList)).ToArray()
+			: Instance.ActiveMatrices.ToArray();
+
+		return AllMatchInternal(mat =>
+				mat.Matrix.IsPassableAtOneMatrix(localOrigin, localTarget, isServer,
+					collisionType: collisionType, includingPlayers: includingPlayers, context: context,
+					excludeLayers: excludeLayers, isReach: isReach, onlyExcludeLayerOnDestination: onlyExcludeLayerOnDestination),
+			includeList);
 	}
 
 	/// <summary>
@@ -875,9 +907,9 @@ public partial class MatrixManager : MonoBehaviour
 		return GetAt<T>((Vector3Int) targetObject.TileWorldPosition(), side == NetworkSide.Server);
 	}
 
-	private static bool AllMatchInternal(Func<MatrixInfo, bool> condition, MatrixInfo[] matrixInfos)
+	private static bool AllMatchInternal(Func<MatrixInfo, bool> condition, IList<MatrixInfo> matrixInfos)
 	{
-		for (var i = 0; i < matrixInfos.Length; i++)
+		for (var i = 0; i < matrixInfos.Count; i++)
 		{
 			if (condition(matrixInfos[i]) == false)
 			{
@@ -891,12 +923,12 @@ public partial class MatrixManager : MonoBehaviour
 	// By default will just check every Matrix
 	private static bool AllMatchInternal(Func<MatrixInfo, bool> condition)
 	{
-		return AllMatchInternal(condition, Instance.ActiveMatrices.ToArray());
+		return AllMatchInternal(condition, Instance.ActiveMatrices);
 	}
 
-	private static bool AnyMatchInternal(Func<MatrixInfo, bool> condition, MatrixInfo[] matrixInfos)
+	private static bool AnyMatchInternal(Func<MatrixInfo, bool> condition, IList<MatrixInfo> matrixInfos)
 	{
-		for (var i = 0; i < matrixInfos.Length; i++)
+		for (var i = 0; i < matrixInfos.Count; i++)
 		{
 			if (condition(matrixInfos[i]))
 			{
@@ -909,7 +941,7 @@ public partial class MatrixManager : MonoBehaviour
 
 	private static bool AnyMatchInternal(Func<MatrixInfo, bool> condition)
 	{
-		return AnyMatchInternal(condition, Instance.ActiveMatrices.ToArray());
+		return AnyMatchInternal(condition, Instance.ActiveMatrices);
 	}
 
 	public static bool IsTableAtAnyMatrix(Vector3Int worldTarget, bool isServer)
@@ -981,12 +1013,15 @@ public partial class MatrixManager : MonoBehaviour
 
 	private static MatrixInfo getInternal(Func<MatrixInfo, bool> condition)
 	{
+		var activeMatrices = Instance.ActiveMatrices;
 		//reverse loop so that station comes up last
-		for (var i = Instance.ActiveMatrices.Count - 1; i >= 0; i--)
+		for (var i = activeMatrices.Count - 1; i >= 0; i--)
 		{
-			if (condition(Instance.ActiveMatrices[i]))
+			var matrixInfo = activeMatrices[i];
+
+			if (condition(matrixInfo))
 			{
-				return Instance.ActiveMatrices[i];
+				return matrixInfo;
 			}
 		}
 
@@ -1092,7 +1127,7 @@ public partial class MatrixManager : MonoBehaviour
 	}
 
 	/// Convert local matrix coordinates to world position. Keeps offsets in mind (+ rotation and pivot if MatrixMove is present)
-	public static Vector3 LocalToWorld(Vector3 localPos, MatrixInfo matrix, MatrixState state = default(MatrixState))
+	public static Vector3 LocalToWorld(Vector3 localPos, MatrixInfo matrix, MatrixState state = default)
 	{
 		//Invalid matrix info provided
 		if (matrix == null || matrix.Equals(MatrixInfo.Invalid) || localPos == TransformState.HiddenPos)
@@ -1100,25 +1135,26 @@ public partial class MatrixManager : MonoBehaviour
 			return TransformState.HiddenPos;
 		}
 
-//		return matrix.MetaTileMap.LocalToWorld( localPos );
+		var matrixMove = matrix.MatrixMove;
 
-		if (matrix.MatrixMove == null)
+		if (matrixMove == null)
 		{
 			return localPos + matrix.Offset;
 		}
 
-		if (state.Equals(default(MatrixState)))
+		if (state.Equals(default))
 		{
-			state = matrix.MatrixMove.ClientState;
+			state = matrixMove.ClientState;
 		}
 
-		Vector3 unpivotedPos = localPos - matrix.MatrixMove.Pivot; //localPos - localPivot
+		var pivot = matrixMove.Pivot;
+
+		Vector3 unpivotedPos = localPos - pivot; //localPos - localPivot
 		Vector3 rotatedPos =
-			state.FacingOffsetFromInitial(matrix.MatrixMove).Quaternion *
+			state.FacingOffsetFromInitial(matrixMove).Quaternion *
 			unpivotedPos; //unpivotedPos rotated by N degrees
 		Vector3 rotatedPivoted =
-			rotatedPos + matrix.MatrixMove.Pivot +
-			matrix.GetOffset(state); //adding back localPivot and applying localToWorldOffset
+			rotatedPos + pivot + matrix.GetOffset(state); //adding back localPivot and applying localToWorldOffset
 		return rotatedPivoted;
 	}
 
@@ -1131,29 +1167,18 @@ public partial class MatrixManager : MonoBehaviour
 			return TransformState.HiddenPos;
 		}
 
+		var matrixMove = matrix.MatrixMove;
 
-		if (matrix.MatrixMove == null)
+		if (matrixMove == null)
 		{
 			return worldPos - matrix.Offset;
 		}
 
-		var state = matrix.MatrixMove.ClientState;
+		var state = matrixMove.ClientState;
+		var pivot = matrixMove.Pivot;
 
-		return (state.FacingOffsetFromInitial(matrix.MatrixMove).QuaternionInverted * (worldPos -
-			matrix.MatrixMove.Pivot -
-			matrix.GetOffset(state))) + matrix.MatrixMove.Pivot;
-
-
-		return (matrix.MatrixMove.FacingOffsetFromInitial.QuaternionInverted *
-		        (worldPos - matrix.Offset - matrix.MatrixMove.Pivot)) +
-		       matrix.MatrixMove.Pivot;
-
-
-		//return
-
-		// return (matrix.MatrixMove.FacingOffsetFromInitial.QuaternionInverted *
-		// (worldPos - matrix.Offset - matrix.MatrixMove.Pivot)) +
-		// matrix.MatrixMove.Pivot;
+		return (state.FacingOffsetFromInitial(matrixMove).QuaternionInverted * (worldPos -
+			pivot - matrix.GetOffset(state))) + pivot;
 	}
 
 	/// Convert world position to local matrix coordinates. Keeps offsets in mind (+ rotation and pivot if MatrixMove is present)

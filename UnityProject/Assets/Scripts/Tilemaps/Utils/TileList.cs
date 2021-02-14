@@ -48,23 +48,26 @@ public class TileList
 			return;
 		}
 
-		if (!_objects.ContainsKey(position))
-		{
-			_objects[position] = new List<RegisterTile>();
-		}
+		_objects.TryGetValue(position, out var objects);
 
-		if (!_objects[position].Contains(obj))
+		if (objects == null)
 		{
-			_objects[position].Add(obj);
+			_objects[position] = new List<RegisterTile> { obj };
+		}
+		else if (objects.Contains(obj) == false)
+		{
+			objects.Add(obj);
 		}
 	}
 	public bool HasObjects(Vector3Int position)
 	{
-		return _objects.ContainsKey(position) && _objects[position].Count > 0;
+		_objects.TryGetValue(position, out var objects);
+		return objects != null && objects.Count > 0;
 	}
 	public List<RegisterTile> Get(Vector3Int position)
 	{
-		return _objects.ContainsKey(position) ? _objects[position] : emptyList;
+		_objects.TryGetValue(position, out var objects);
+		return objects ?? emptyList;
 	}
 
 	public IEnumerable<RegisterTile> Get(Vector3Int position, ObjectType type) {

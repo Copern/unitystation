@@ -8,6 +8,7 @@ using UnityEngine.Events;
 using UnityEngine.Tilemaps;
 using Systems.Atmospherics;
 using TileManagement;
+using Tilemaps.Behaviours.Layers;
 
 /// <summary>
 /// Behavior which indicates a matrix - a contiguous grid of tiles.
@@ -557,9 +558,10 @@ public class Matrix : MonoBehaviour
 	private void OnDrawGizmos()
 	{
 		Gizmos.color = Color;
-		BoundsInt bounds = MetaTileMap.GetWorldBounds();
-		DebugGizmoUtils.DrawText(gameObject.name, bounds.max, 11, 5);
-		DebugGizmoUtils.DrawRect(bounds);
+		MatrixBounds bounds = MetaTileMap.MatrixBounds;
+		var worldMax = bounds.WorldMax;
+		DebugGizmoUtils.DrawText(gameObject.name, worldMax, 11, 5);
+		DebugGizmoUtils.DrawRect(bounds.WorldMin, worldMax);
 	}
 #endif
 }

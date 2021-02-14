@@ -255,16 +255,18 @@ namespace Blob
 
 			if (playerScript.IsDeadOrGhost) return;
 
-			var bound = MatrixManager.MainStationMatrix.Bounds;
+			var stationBounds = MatrixManager.MainStationMatrix.MatrixBounds;
+			var boundsMin = stationBounds.Min;
+			var boundsMax = stationBounds.Max;
 
 			//Teleport user to random location on station if outside radius of 600 or on a space tile
 			if (((gameObject.AssumedWorldPosServer() - MatrixManager.MainStationMatrix.GameObject.AssumedWorldPosServer())
 				.magnitude > 600f) || MatrixManager.IsSpaceAt(gameObject.GetComponent<PlayerSync>().ServerPosition, true))
 			{
-				Vector3 position = new Vector3(Random.Range(bound.xMin, bound.xMax), Random.Range(bound.yMin, bound.yMax), 0);
+				Vector3 position = new Vector3(Random.Range(boundsMin.x, boundsMax.x), Random.Range(boundsMin.y, boundsMax.y), 0);
 				while (MatrixManager.IsSpaceAt(Vector3Int.FloorToInt(position), true) || MatrixManager.IsWallAtAnyMatrix(Vector3Int.FloorToInt(position), true))
 				{
-					position = new Vector3(Random.Range(bound.xMin, bound.xMax), Random.Range(bound.yMin, bound.yMax), 0);
+					position = new Vector3(Random.Range(boundsMin.x, boundsMax.x), Random.Range(boundsMin.y, boundsMax.y), 0);
 				}
 
 				gameObject.GetComponent<PlayerSync>().SetPosition(position, true);

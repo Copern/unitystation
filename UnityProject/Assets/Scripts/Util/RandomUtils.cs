@@ -28,7 +28,7 @@ public static class RandomUtils
 	/// </summary>
 	public static Vector3Int GetRandomPointOnStation(bool avoidSpace = false, bool avoidImpassable = false)
 	{
-		var stationBounds = MatrixManager.MainStationMatrix.Bounds;
+		var stationBounds = MatrixManager.MainStationMatrix.MatrixBounds.Bounds;
 
 		Vector3Int point = default;
 		for (int i = 0; i < 10; i++)

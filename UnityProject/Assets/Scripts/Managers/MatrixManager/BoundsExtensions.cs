@@ -12,9 +12,9 @@ public static class BoundsExtensions
 			return false;
 		}
 
-		var rect = matrix.WorldBounds.Extend( 1 ).ToRect();
+		var rect = matrix.MatrixBounds.WorldBounds.Extend( 1 ).ToRect();
 
-		return rect.Overlaps( otherMatrix.WorldBounds.Extend( 1 ).ToRect() );
+		return rect.Overlaps( otherMatrix.MatrixBounds.WorldBounds.Extend( 1 ).ToRect() );
 	}
 
 	public static bool BoundsIntersect( this MatrixInfo matrix, MatrixInfo otherMatrix, out Rect intersection )
@@ -25,9 +25,9 @@ public static class BoundsExtensions
 			return false;
 		}
 
-		var rect = matrix.WorldBounds.Extend( 1 ).ToRect();
+		var rect = matrix.MatrixBounds.WorldBounds.Extend( 1 ).ToRect();
 
-		return rect.Intersects( otherMatrix.WorldBounds.Extend( 1 ).ToRect(), out intersection );
+		return rect.Intersects( otherMatrix.MatrixBounds.WorldBounds.Extend( 1 ).ToRect(), out intersection );
 	}
 
 	public static Rect ToRect( this BoundsInt bounds )

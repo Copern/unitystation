@@ -106,7 +106,7 @@ public class MetaDataSystem : SubsystemBehaviour
 
 	private void LocateRooms()
 	{
-		BoundsInt bounds = metaTileMap.GetBounds();
+		var bounds = metaTileMap.MatrixBounds.Bounds;
 
 		var watch = new Stopwatch();
 		watch.Start();

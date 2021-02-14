@@ -11,7 +11,7 @@ namespace Systems.Atmospherics
 			if (!CustomNetworkManager.IsServer)
 				return;
 
-			BoundsInt bounds = metaTileMap.GetBounds();
+			var bounds = metaTileMap.MatrixBounds.Bounds;
 
 			foreach (Vector3Int position in bounds.allPositionsWithin)
 			{

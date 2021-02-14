@@ -4,6 +4,7 @@ using UnityEngine;
 using Mirror;
 using Systems.Atmospherics;
 using TileManagement;
+using Tilemaps.Behaviours.Layers;
 
 /// Class that helps identify matrices
 public class MatrixInfo : IEquatable<MatrixInfo>
@@ -27,9 +28,7 @@ public class MatrixInfo : IEquatable<MatrixInfo>
 	private Vector3Int initialOffset;
 	private uint netId;
 
-	public BoundsInt Bounds => MetaTileMap.GetBounds();
-
-	public BoundsInt WorldBounds => MetaTileMap.GetWorldBounds();
+	public MatrixBounds MatrixBounds => MetaTileMap.MatrixBounds;
 
 	public Transform ObjectParent => MetaTileMap.ObjectLayer.transform;
 
@@ -40,7 +39,7 @@ public class MatrixInfo : IEquatable<MatrixInfo>
 	public string Name => Matrix.gameObject.name;
 
 	//todo: placeholder, should depend on solid tiles count instead (and use caching)
-	public float Mass => Bounds.size.sqrMagnitude/1000f;
+	public float Mass => MatrixBounds.Bounds.size.sqrMagnitude/1000f;
 
 	public bool IsMovable => MatrixMove != null;
 
@@ -57,23 +56,25 @@ public class MatrixInfo : IEquatable<MatrixInfo>
 
 	public Vector3Int Offset => GetOffset();
 
-	public Vector3Int GetOffset(MatrixState state = default(MatrixState))
+	public Vector3Int GetOffset(MatrixState state = default)
 	{
 		if (!MatrixMove)
 		{
 			return InitialOffset;
 		}
 
-		if (state.Equals(default(MatrixState)))
+		if (state.Equals(default))
 		{
 			state = MatrixMove.ClientState;
 		}
 
-		if (cachedPosition != state.Position)
+		var statePos = state.Position;
+
+		if (cachedPosition != statePos)
 		{
 			//if we moved, update cached offset
-			cachedPosition = state.Position;
-			CachedOffset = initialOffset + (state.Position.RoundToInt() - MatrixMove.InitialPosition);
+			cachedPosition = statePos;
+			CachedOffset = initialOffset + (statePos.RoundToInt() - MatrixMove.InitialPosition);
 		}
 
 		return CachedOffset;

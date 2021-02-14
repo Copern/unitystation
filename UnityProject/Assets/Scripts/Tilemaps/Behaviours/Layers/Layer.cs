@@ -94,6 +94,7 @@ public class Layer : MonoBehaviour
 	public virtual void RecalculateBounds()
 	{
 		boundsCache = tilemap.cellBounds;
+		matrix.MetaTileMap.OrNull()?.UpdateMatrixBounds();
 		this.TryStopCoroutine(ref recalculateBoundsHandle);
 	}
 

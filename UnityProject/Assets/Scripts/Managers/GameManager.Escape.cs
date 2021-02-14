@@ -54,64 +54,65 @@ public partial class GameManager
 
 		//later, maybe: keep a list of all computers and call the shuttle automatically with a 25 min timer if they are deleted
 
-		if (primaryEscapeShuttle.MatrixInfo == null)
-		{
-			Logger.LogError("Primary escape shuttle has no associated matrix!");
-			return;
-		}
-
+		var matrixInfo = primaryEscapeShuttle.MatrixInfo;
 		//Starting up at Centcom coordinates
 		if (GameManager.Instance.QuickLoad)
 		{
-			if (primaryEscapeShuttle.MatrixInfo == null) return;
-			if (primaryEscapeShuttle.MatrixInfo.MatrixMove == null) return;
+			if (matrixInfo is null) return;
+			if (matrixInfo.MatrixMove == null) return;
 		}
 
-		var orientation = primaryEscapeShuttle.MatrixInfo.MatrixMove.InitialFacing;
+		var matrixMove = matrixInfo.MatrixMove;
+
+		var orientation = matrixMove.InitialFacing;
 		float width;
+
+		var shuttleSize = matrixInfo.MatrixBounds.Bounds.size;
 
 		if (orientation == Orientation.Up || orientation == Orientation.Down)
 		{
-			width = PrimaryEscapeShuttle.MatrixInfo.Bounds.size.x;
+			width = shuttleSize.x;
 		}
 		else
 		{
-			width = PrimaryEscapeShuttle.MatrixInfo.Bounds.size.y;
+			width = shuttleSize.y;
 		}
 
 		Vector3 newPos;
+		var landingManager = LandingZoneManager.Instance;
+		var centcomDockingPos = landingManager.centcomDockingPos;
 
-		switch (LandingZoneManager.Instance.centcomDocking.orientation)
+		switch (landingManager.centcomDocking.orientation)
 		{
 			case OrientationEnum.Right:
-				newPos = new Vector3(LandingZoneManager.Instance.centcomDockingPos.x + Mathf.Ceil(width/2f),LandingZoneManager.Instance.centcomDockingPos.y, 0);
+				newPos = new Vector3(centcomDockingPos.x + Mathf.Ceil(width/2f), centcomDockingPos.y, 0);
 				break;
 			case OrientationEnum.Up:
-				newPos = new Vector3(LandingZoneManager.Instance.centcomDockingPos.x ,LandingZoneManager.Instance.centcomDockingPos.y + Mathf.Ceil(width/2f), 0);
+				newPos = new Vector3(centcomDockingPos.x , centcomDockingPos.y + Mathf.Ceil(width/2f), 0);
 				break;
 			case OrientationEnum.Left:
-				newPos = new Vector3(LandingZoneManager.Instance.centcomDockingPos.x - Mathf.Ceil(width/2f),LandingZoneManager.Instance.centcomDockingPos.y, 0);
+				newPos = new Vector3(centcomDockingPos.x - Mathf.Ceil(width/2f), centcomDockingPos.y, 0);
 				break;
 			default:
-				newPos = new Vector3(LandingZoneManager.Instance.centcomDockingPos.x ,LandingZoneManager.Instance.centcomDockingPos.y - Mathf.Ceil(width/2f), 0);
+				newPos = new Vector3(centcomDockingPos.x , centcomDockingPos.y - Mathf.Ceil(width/2f), 0);
 				break;
 		}
 
-		PrimaryEscapeShuttle.MatrixInfo.MatrixMove.ChangeFacingDirection(Orientation.FromEnum(PrimaryEscapeShuttle.orientationForDockingAtCentcom));
-		PrimaryEscapeShuttle.MatrixInfo.MatrixMove.SetPosition(newPos);
+		matrixMove.ChangeFacingDirection(Orientation.FromEnum(primaryEscapeShuttle.orientationForDockingAtCentcom));
+		matrixMove.SetPosition(newPos);
 		primaryEscapeShuttle.InitDestination(newPos);
 
 		bool beenToStation = false;
 
-		PrimaryEscapeShuttle.OnShuttleUpdate?.AddListener( status =>
+		primaryEscapeShuttle.OnShuttleUpdate?.AddListener( status =>
 		{
 			//status display ETA tracking
 			if ( status == EscapeShuttleStatus.OnRouteStation )
 			{
-				PrimaryEscapeShuttle.OnTimerUpdate.AddListener( TrackETA );
+				primaryEscapeShuttle.OnTimerUpdate.AddListener( TrackETA );
 			} else
 			{
-				PrimaryEscapeShuttle.OnTimerUpdate.RemoveListener( TrackETA );
+				primaryEscapeShuttle.OnTimerUpdate.RemoveListener( TrackETA );
 				CentComm.UpdateStatusDisplay( StatusDisplayChannel.EscapeShuttle, string.Empty);
 			}
 

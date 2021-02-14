@@ -23,12 +23,14 @@ namespace InGameEvents
 
 		public override void OnEventStartTimed()
 		{
-			var stationBounds = MatrixManager.MainStationMatrix.Bounds;
+			var stationBounds = MatrixManager.MainStationMatrix.MatrixBounds;
+			var boundsMin = stationBounds.Min;
+			var boundsMax = stationBounds.Max;
 
-			float width = 0.35f * (stationBounds.xMax - stationBounds.xMin);
-			float height = 0.35f * (stationBounds.yMax - stationBounds.yMin);
-			float minX = Random.Range(stationBounds.xMin, stationBounds.xMax - width);
-			float minY = Random.Range(stationBounds.yMin, stationBounds.yMax - height);
+			float width = 0.35f * (boundsMax.x - boundsMin.x);
+			float height = 0.35f * (boundsMax.y - boundsMin.y);
+			float minX = Random.Range(boundsMin.x, boundsMax.x - width);
+			float minY = Random.Range(boundsMin.y, boundsMax.y - height);
 
 			var region = new Bounds();
 			region.SetMinMax(new Vector2(minX, minY), new Vector2(minX + width, minY + height));

@@ -44,18 +44,18 @@ public class MatrixMove : ManagedNetworkBehaviour
 
 
 	[SyncVar(hook = nameof(SyncInitialPosition))]
-	private Vector3 initialPosition;
+	private Vector3Int initialPosition;
 	/// <summary>
 	/// Initial position for offset calculation, set on start and never changed afterwards
 	/// </summary>
-	public Vector3Int InitialPosition => initialPosition.RoundToInt();
+	public Vector3Int InitialPosition => initialPosition;
 
 	[SyncVar(hook = nameof(SyncPivot))]
-	private Vector3 pivot;
+	private Vector3Int pivot;
 	/// <summary>
 	/// local pivot point, set on start and never changed afterwards
 	/// </summary>
-	public Vector3 Pivot => pivot.RoundToInt();
+	public Vector3Int Pivot => pivot;
 
 	/// <summary>
 	/// All the various events that can be subscribed to on this matrix
@@ -335,14 +335,14 @@ public class MatrixMove : ManagedNetworkBehaviour
 		this.coordReadoutScript = coordReadout;
 	}
 
-	private void SyncInitialPosition(Vector3 oldPos, Vector3 initialPos)
+	private void SyncInitialPosition(Vector3Int oldPos, Vector3Int initialPos)
 	{
-		this.initialPosition = initialPos.RoundToInt();
+		this.initialPosition = initialPos;
 	}
 
-	private void SyncPivot(Vector3 oldPivot, Vector3 pivot)
+	private void SyncPivot(Vector3Int oldPivot, Vector3Int pivot)
 	{
-		this.pivot = pivot.RoundToInt();
+		this.pivot = pivot;
 	}
 
 	/// <summary>

@@ -495,10 +495,17 @@ public partial class MatrixManager
 		if (!Application.isPlaying || !IsInitialized) return;
 		foreach ( var intersection in Instance.TrackedIntersections )
 		{
+			var matrix1Bounds = intersection.Matrix1.MatrixBounds;
+			var matrix2Bounds = intersection.Matrix2.MatrixBounds;
+			var matrix1Min = matrix1Bounds.WorldMin;
+			var matrix1Max = matrix1Bounds.WorldMax;
+			var matrix2Min = matrix2Bounds.WorldMin;
+			var matrix2Max = matrix2Bounds.WorldMax;
+
 			Gizmos.color = Color.red;
-			DebugGizmoUtils.DrawRect( intersection.Matrix1.WorldBounds );
+			DebugGizmoUtils.DrawRect( matrix1Min, matrix2Max );
 			Gizmos.color = Color.blue;
-			DebugGizmoUtils.DrawRect( intersection.Matrix2.WorldBounds );
+			DebugGizmoUtils.DrawRect( matrix2Min, matrix2Max );
 			Gizmos.color = Color.yellow;
 			DebugGizmoUtils.DrawRect( intersection.Rect );
 		}
